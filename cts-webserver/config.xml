@@ -13,7 +13,7 @@
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
     <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.32.0">
-      <projectUrl>https://github.com/sorli2se/devops.git/</projectUrl>
+      <projectUrl>https://github.com/sorli2se/cts.git/</projectUrl>
       <displayName></displayName>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
     <hudson.plugins.copyartifact.CopyArtifactPermissionProperty plugin="copyartifact@1.45.2">
@@ -27,7 +27,7 @@
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
         <name>${JOB_NAME}</name>
-        <url>https://github.com/sorli2se/devops.git</url>
+        <url>https://github.com/sorli2se/cts.git</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>

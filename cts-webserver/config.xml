@@ -12,23 +12,23 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
-    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.32.0">
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.3">
       <projectUrl>https://github.com/sorli2se/cts.git/</projectUrl>
       <displayName></displayName>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
-    <hudson.plugins.copyartifact.CopyArtifactPermissionProperty plugin="copyartifact@1.45.2">
+    <hudson.plugins.copyartifact.CopyArtifactPermissionProperty plugin="copyartifact@1.46.4">
       <projectNameList>
-        <string>ci_job_cts-webserver</string>
+        <string>ci-job-cts-webserver</string>
       </projectNameList>
     </hudson.plugins.copyartifact.CopyArtifactPermissionProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.4.5">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.11.3">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
         <name>${JOB_NAME}</name>
         <url>https://github.com/sorli2se/cts.git</url>
-        <credentialsId>fec586c0-5329-40ec-8a8a-215956446a6f</credentialsId>
+        <credentialsId>f71ceb44-7f1e-414d-ada9-b7c49a230a7f</credentialsId>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
@@ -37,7 +37,7 @@
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
-    <submoduleCfg class="list"/>
+    <submoduleCfg class="empty-list"/>
     <extensions/>
   </scm>
   <canRoam>true</canRoam>
@@ -52,7 +52,9 @@
 cd service
 echo &quot;Release ${BUILD_NUMBER}&quot; &gt;&gt; index.html
 docker build -t ${JOB_NAME}:${BUILD_NUMBER} .
-        </command>
+#docker commit $(docker ps -lq) ${JOB_NAME}:${BUILD_NUMBER}
+docker tag ${JOB_NAME}:${BUILD_NUMBER} localhost/${JOB_NAME}:${BUILD_NUMBER}
+docker push localhost/${JOB_NAME}:${BUILD_NUMBER}</command>
       <configuredLocalRules/>
     </hudson.tasks.Shell>
     <hudson.tasks.Shell>

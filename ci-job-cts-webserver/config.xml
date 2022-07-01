@@ -12,7 +12,7 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
-    <hudson.plugins.copyartifact.CopyArtifactPermissionProperty plugin="copyartifact@1.45.2">
+    <hudson.plugins.copyartifact.CopyArtifactPermissionProperty plugin="copyartifact@1.46.4">
       <projectNameList>
         <string>cd-job-cts-webserver</string>
       </projectNameList>
@@ -21,13 +21,11 @@
       <parameterDefinitions>
         <hudson.model.RunParameterDefinition>
           <name>SERVICE</name>
-          <description></description>
           <projectName>cts-webserver</projectName>
           <filter>SUCCESSFUL</filter>
         </hudson.model.RunParameterDefinition>
         <hudson.model.RunParameterDefinition>
           <name>K8S_CONFIG</name>
-          <description></description>
           <projectName>kubernetes-config</projectName>
           <filter>SUCCESSFUL</filter>
         </hudson.model.RunParameterDefinition>
@@ -42,7 +40,7 @@
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
-    <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.45.2">
+    <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.46.4">
       <project>${SERVICE_JOBNAME}</project>
       <filter>metadata.txt</filter>
       <target>artifacts/${SERVICE_JOBNAME}</target>
@@ -52,7 +50,7 @@
       </selector>
       <doNotFingerprintArtifacts>false</doNotFingerprintArtifacts>
     </hudson.plugins.copyartifact.CopyArtifact>
-    <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.45.2">
+    <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.46.4">
       <project>${K8S_CONFIG_JOBNAME}</project>
       <filter>metadata.txt</filter>
       <target>artifacts/${K8S_CONFIG_JOBNAME}</target>

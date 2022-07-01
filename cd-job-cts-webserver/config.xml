@@ -1,88 +1,92 @@
-<?xml version="1.0" encoding="UTF-8"?><flow-definition>
-    <actions/>
-    <description/>
-    <keepDependencies>false</keepDependencies>
-    <properties>
-        <hudson.model.ParametersDefinitionProperty>
-            <parameterDefinitions>
-                <hudson.model.RunParameterDefinition>
-                    <name>CI_JOB</name>
-                    <projectName>ci-job-cts-webserver</projectName>
-                    <description/>
-                    <filter>SUCCESSFUL</filter>
-                </hudson.model.RunParameterDefinition>
-            </parameterDefinitions>
-        </hudson.model.ParametersDefinitionProperty>
-    </properties>
-    <triggers/>
-    <logRotator>
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1186.v8def1a_5f3944">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
         <daysToKeep>-1</daysToKeep>
         <numToKeep>30</numToKeep>
         <artifactDaysToKeep>-1</artifactDaysToKeep>
         <artifactNumToKeep>-1</artifactNumToKeep>
-    </logRotator>
-    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
-        <script>// Global Vars
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.RunParameterDefinition>
+          <name>CI_JOB</name>
+          <projectName>ci-job-cts-webserver</projectName>
+          <filter>SUCCESSFUL</filter>
+        </hudson.model.RunParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2725.v7b_c717eb_12ce">
+    <script>// Global Vars
 
-["test", "staging", "live"].each { environment -&gt;
+[&quot;test&quot;, &quot;staging&quot;, &quot;live&quot;].each { environment -&gt;
     node() {
 
-        def ci_job_name = env."CI_JOB_JOBNAME"
-        def ci_job_number = env."CI_JOB_NUMBER"
+        def ci_job_name = env.&quot;CI_JOB_JOBNAME&quot;
+        def ci_job_number = env.&quot;CI_JOB_NUMBER&quot;
         def graph
 
 
-        stage("[${environment.toUpperCase()}] Reading manifest") {
-            artifact_path = "${env.'JOB_NAME'}_${env.'BUILD-NUMBER'}"
-            echo "Saving graph from ${ci_job_name}:${ci_job_number} into ${artifact_path}"
+        stage(&quot;[${environment.toUpperCase()}] Reading manifest&quot;) {
+            artifact_path = &quot;${env.&apos;JOB_NAME&apos;}_${env.&apos;BUILD-NUMBER&apos;}&quot;
+            echo &quot;Saving graph from ${ci_job_name}:${ci_job_number} into ${artifact_path}&quot;
 
             deleteDir()
 
             //Artifact
             copyArtifacts(projectName: ci_job_name, selector: specific(ci_job_number), target: artifact_path)
-            def files = findFiles(glob: "${artifact_path}/*.yaml")
-            echo "Artifact found: ${files[0]}"
-            sh "cat ${files[0]}"
+            def files = findFiles(glob: &quot;${artifact_path}/*.yaml&quot;)
+            echo &quot;Artifact found: ${files[0]}&quot;
+            sh &quot;cat ${files[0]}&quot;
 
             //Read yaml
-            graph = readYaml file: "${files[0]}"
+            graph = readYaml file: &quot;${files[0]}&quot;
         }
 
 
         //*************************************** KUBERNETES DEPLOYMENT ***************************************//
 
-        if (graph.'kubernetes-config') {
-            stage("[${environment.toUpperCase()}] Kubernetes Deployment") {
+        if (graph.&apos;kubernetes-config&apos;) {
+            stage(&quot;[${environment.toUpperCase()}] Kubernetes Deployment&quot;) {
                 def current_file_path
                 def current_file
 
                 dir(environment){
 
-                    dir("kubernetes-config") {
+                    dir(&quot;kubernetes-config&quot;) {
                         deleteDir()
 
-                        sh returnStatus: true, script: "kubectl --kubeconfig /etc/kubernetes/config create namespace ${environment}"
+                        sh returnStatus: true, script: &quot;kubectl --kubeconfig /var/lib/jenkins/.kube/config create namespace ${environment}&quot;
                         // In case you need to use credentials
-//                        git branch: "main", credentialsId: "git_token", url: graph.'kubernetes-config'.repo_url
-                        git branch: "main", url: graph.'kubernetes-config'.repo_url
-                        sh script: "git checkout ${graph.'kubernetes-config'.revision}"
+//                        git branch: &quot;main&quot;, credentialsId: &quot;git_token&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        sh script: &quot;git checkout ${graph.&apos;kubernetes-config&apos;.revision}&quot;
 
 
-                        ["daemonset", "deployment"].each { resource_type -&gt;
-                            current_file_path = "kubernetes/${graph.service.name}/${environment}/${resource_type}.yaml"
+                        [&quot;daemonset&quot;, &quot;deployment&quot;].each { resource_type -&gt;
+                            current_file_path = &quot;kubernetes/${graph.service.name}/${environment}/${resource_type}.yaml&quot;
 
                             if (fileExists(current_file_path)) {
 
                                 // Read and replace the bookmarks
                                 current_file = readFile current_file_path
                                 echo current_file
-                                current_file = current_file.replace("SERVICE_NAME", "${graph.service.name}")
-                                current_file = current_file.replace("IMAGE_VERSION", "${graph.service.revision}")
-                                current_file = current_file.replace("IMAGE", "${graph.service.name}")
+                                current_file = current_file.replace(&quot;SERVICE_NAME&quot;, &quot;${graph.service.name}&quot;)
+                                current_file = current_file.replace(&quot;IMAGE_VERSION&quot;, &quot;${graph.service.revision}&quot;)
+                                current_file = current_file.replace(&quot;IMAGE&quot;, &quot;${graph.service.name}&quot;)
 
-                                writeFile file: "resources_${environment}.yaml", text: current_file
+                                writeFile file: &quot;resources_${environment}.yaml&quot;, text: current_file
 
-                                sh script: "kubectl --kubeconfig /etc/kubernetes/config apply -n ${environment} -f resources_${environment}.yaml"
+                                sh script: &quot;kubectl --kubeconfig /var/lib/jenkins/.kube/config apply -n ${environment} -f resources_${environment}.yaml&quot;
+                                
+                                current_file = readFile &quot;resources_${environment}.yaml&quot;
+                                echo current_file
                             }
                         }
                     }
@@ -92,28 +96,28 @@
 
 
         //*************************************** TESTS ***************************************//
-        if (graph.'kubernetes-config') {
-            stage("[${environment.toUpperCase()}] Run Tests") {
+        if (graph.&apos;kubernetes-config&apos;) {
+            stage(&quot;[${environment.toUpperCase()}] Run Tests&quot;) {
 
                 dir(environment){
 
-                    dir("tests") {
+                    dir(&quot;tests&quot;) {
                         deleteDir()
 
-//                        git branch: "main", credentialsId: "git_token", url: graph.'kubernetes-config'.repo_url
-                        git branch: "main", url: graph.'kubernetes-config'.repo_url
+//                        git branch: &quot;main&quot;, credentialsId: &quot;git_token&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
 
-                        sh script: "git checkout ${graph.'kubernetes-config'.revision}"
+                        sh script: &quot;git checkout ${graph.&apos;kubernetes-config&apos;.revision}&quot;
 
-                        ["daemonset", "deployment"].each { resource_type -&gt;
+                        [&quot;daemonset&quot;, &quot;deployment&quot;].each { resource_type -&gt;
 
-                            if (fileExists("kubernetes/${graph.service.name}/${resource_type}.yaml")) {
+                            if (fileExists(&quot;kubernetes/${graph.service.name}/${resource_type}.yaml&quot;)) {
 
-                                if (resource_type == "deployment"){
+                                if (resource_type == &quot;deployment&quot;){
                                     waitUntil() {
                                         sleep(5)
-                                        rollout_status = sh returnStdout: true, script: "kubectl --kubeconfig /etc/kubernetes/config rollout status --watch=false -n ${environment} ${resource_type}/${graph.service.name}"
-                                        rollout_status.contains("successfully rolled out")
+                                        rollout_status = sh returnStdout: true, script: &quot;kubectl --kubeconfig /var/lib/jenkins/.kube/config rollout status --watch=false -n ${environment} ${resource_type}/${graph.service.name}&quot;
+                                        rollout_status.contains(&quot;successfully rolled out&quot;)
                                     }
                                 }
                             }
@@ -126,6 +130,8 @@
 }
 
 </script>
-        <sandbox>true</sandbox>
-    </definition>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
 </flow-definition>

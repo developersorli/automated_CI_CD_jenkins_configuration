@@ -52,25 +52,25 @@
 
         //*************************************** KUBERNETES DEPLOYMENT ***************************************//
 
-        if (graph.&apos;kubernetes-config&apos;) {
+        if (graph.&apos;cts-kubernetes-config&apos;) {
             stage(&quot;[${environment.toUpperCase()}] Kubernetes Deployment&quot;) {
                 def current_file_path
                 def current_file
 
                 dir(environment){
 
-                    dir(&quot;kubernetes-config&quot;) {
+                    dir(&quot;cts-kubernetes-config&quot;) {
                         deleteDir()
 
                         sh returnStatus: true, script: &quot;kubectl create namespace ${environment}&quot;
                         // In case you need to use credentials
-                        git branch: &quot;master&quot;, credentialsId: &quot;6077620c-1a9f-45ee-9072-3fb08a0a62e7&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        git branch: &quot;master&quot;, credentialsId: &quot;6077620c-1a9f-45ee-9072-3fb08a0a62e7&quot;, url: graph.&apos;cts-kubernetes-config&apos;.repo_url
                         //git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
-                        sh script: &quot;git checkout ${graph.&apos;kubernetes-config&apos;.revision}&quot;
+                        sh script: &quot;git checkout ${graph.&apos;cts-kubernetes-config&apos;.revision}&quot;
 
 
                         [&quot;daemonset&quot;, &quot;deployment&quot;].each { resource_type -&gt;
-                            current_file_path = &quot;kubernetes/${graph.service.name}/${environment}/${resource_type}.yaml&quot;
+                            current_file_path = &quot;cts-kubernetes/${graph.service.name}/${environment}/${resource_type}.yaml&quot;
                             echo &quot;File: &quot; + current_file_path
                             
                             if (fileExists(current_file_path)) {
@@ -113,10 +113,10 @@
                     dir(&quot;tests&quot;) {
                         deleteDir()
 
-                        git branch: &quot;master&quot;, credentialsId: &quot;6077620c-1a9f-45ee-9072-3fb08a0a62e7&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        git branch: &quot;master&quot;, credentialsId: &quot;6077620c-1a9f-45ee-9072-3fb08a0a62e7&quot;, url: graph.&apos;cts-kubernetes-config&apos;.repo_url
                         //git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
 
-                        sh script: &quot;git checkout ${graph.&apos;kubernetes-config&apos;.revision}&quot;
+                        sh script: &quot;git checkout ${graph.&apos;cts-kubernetes-config&apos;.revision}&quot;
 
                         [&quot;daemonset&quot;, &quot;deployment&quot;].each { resource_type -&gt;
 

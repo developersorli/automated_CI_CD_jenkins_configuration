@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@1186.v8def1a_5f3944">
+<flow-definition plugin="workflow-job@1189.va_d37a_e9e4eda_">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -25,7 +25,7 @@
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2725.v7b_c717eb_12ce">
     <script>// Global Vars
 
-[&quot;test&quot;, &quot;staging&quot;, &quot;live&quot;].each { environment -&gt;
+[&quot;test&quot;].each { environment -&gt;
     node() {
 
         def ci_job_name = env.&quot;CI_JOB_JOBNAME&quot;
@@ -62,31 +62,40 @@
                     dir(&quot;kubernetes-config&quot;) {
                         deleteDir()
 
-                        sh returnStatus: true, script: &quot;kubectl --kubeconfig /var/lib/jenkins/.kube/config create namespace ${environment}&quot;
+                        sh returnStatus: true, script: &quot;kubectl create namespace ${environment}&quot;
                         // In case you need to use credentials
-//                        git branch: &quot;main&quot;, credentialsId: &quot;git_token&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
-                        git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        git branch: &quot;master&quot;, credentialsId: &quot;6077620c-1a9f-45ee-9072-3fb08a0a62e7&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        //git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
                         sh script: &quot;git checkout ${graph.&apos;kubernetes-config&apos;.revision}&quot;
 
 
                         [&quot;daemonset&quot;, &quot;deployment&quot;].each { resource_type -&gt;
                             current_file_path = &quot;kubernetes/${graph.service.name}/${environment}/${resource_type}.yaml&quot;
-
+                            echo &quot;File: &quot; + current_file_path
+                            
                             if (fileExists(current_file_path)) {
 
                                 // Read and replace the bookmarks
                                 current_file = readFile current_file_path
-                                echo current_file
-                                current_file = current_file.replace(&quot;SERVICE_NAME&quot;, &quot;${graph.service.name}&quot;)
+                                echo &quot;Contend: &quot; + current_file
+                                current_file = current_file.replace(&quot;SERVICE_NAME&quot;, &quot;${graph.app.project_branch}-${graph.service.name}&quot;)
+                                echo &quot;${graph.service.name}&quot;
+                                current_file = current_file.replace(&quot;SERVICE_TTL&quot;, &quot;${graph.app.service_ttl}&quot;)
+                                echo &quot;${graph.app.service_ttl}&quot;
                                 current_file = current_file.replace(&quot;IMAGE_VERSION&quot;, &quot;${graph.service.revision}&quot;)
-                                current_file = current_file.replace(&quot;IMAGE&quot;, &quot;${graph.service.name}&quot;)
+                                echo &quot;${graph.service.revision}&quot;
+                                current_file = current_file.replace(&quot;IMAGE&quot;, &quot;${graph.app.project_branch}-${graph.service.name}&quot;)
+                                echo &quot;${graph.service.name}&quot;
 
                                 writeFile file: &quot;resources_${environment}.yaml&quot;, text: current_file
-
-                                sh script: &quot;kubectl --kubeconfig /var/lib/jenkins/.kube/config apply -n ${environment} -f resources_${environment}.yaml&quot;
-                                
-                                current_file = readFile &quot;resources_${environment}.yaml&quot;
                                 echo current_file
+                                
+                                sh script: &quot;kubectl apply -n ${environment} -f resources_${environment}.yaml&quot;
+                                
+                                echo &quot;File: resources_${environment}.yaml&quot;
+                                current_file = readFile &quot;resources_${environment}.yaml&quot;
+                                echo &quot;Content:&quot; + current_file
+                                
                             }
                         }
                     }
@@ -104,19 +113,18 @@
                     dir(&quot;tests&quot;) {
                         deleteDir()
 
-//                        git branch: &quot;main&quot;, credentialsId: &quot;git_token&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
-                        git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        git branch: &quot;master&quot;, credentialsId: &quot;6077620c-1a9f-45ee-9072-3fb08a0a62e7&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
+                        //git branch: &quot;main&quot;, url: graph.&apos;kubernetes-config&apos;.repo_url
 
                         sh script: &quot;git checkout ${graph.&apos;kubernetes-config&apos;.revision}&quot;
 
                         [&quot;daemonset&quot;, &quot;deployment&quot;].each { resource_type -&gt;
 
                             if (fileExists(&quot;kubernetes/${graph.service.name}/${resource_type}.yaml&quot;)) {
-
                                 if (resource_type == &quot;deployment&quot;){
                                     waitUntil() {
                                         sleep(5)
-                                        rollout_status = sh returnStdout: true, script: &quot;kubectl --kubeconfig /var/lib/jenkins/.kube/config rollout status --watch=false -n ${environment} ${resource_type}/${graph.service.name}&quot;
+                                        rollout_status = sh returnStdout: true, script: &quot;kubectl rollout status --watch=false -n ${environment} ${resource_type}/${graph.app.project_branch}_${graph.service.name}&quot;
                                         rollout_status.contains(&quot;successfully rolled out&quot;)
                                     }
                                 }
@@ -126,6 +134,39 @@
                 }
             }
         }
+        
+        def endpoint_status
+        timeout(120) {
+            waitUntil() {
+                sleep(10)
+                endpoint_status = sh returnStdout: true, script: &quot;kubectl get endpoints -n test&quot;
+                return endpoint_status.contains(&quot;${graph.app.project_branch}-${graph.service.name}&quot;)
+            }
+        }
+                                        
+        echo &quot;Endpoint status: $endpoint_status&quot;
+        
+        
+        def lines = endpoint_status.split(&apos;\n&apos;)
+        def processName = &quot;${graph.app.project_branch}&quot;
+        echo &quot;Input parameter: $processName&quot;
+        def hasProcess  = { it.toLowerCase().contains(processName) }
+        if(lines.any(hasProcess)) { 
+          println &quot;Sucess&quot;
+          def endPoint = lines.findAll(hasProcess).join(&apos;&apos;)
+          def point = endPoint.replaceAll(&apos;   &apos;, &apos; &apos;).replaceAll(&apos;  &apos;, &apos; &apos;).split(&apos; &apos;)[1]
+          echo &quot;End point: $point&quot;
+          echo &quot;===============================================================&quot;
+          echo &quot;Send url to Jira&quot;
+          echo &quot;Branch name: ${graph.app.branch_name}&quot;
+          echo &quot;Service name: ${graph.app.project_branch}-${graph.service.name}&quot;
+          echo &quot;Service version: ${graph.service.revision}&quot;
+          echo &quot;Url link: http://$point/system/properties&quot;
+          echo &quot;===============================================================&quot;
+        } else { 
+          println &quot;Failure&quot;
+        }
+    
     }
 }
 

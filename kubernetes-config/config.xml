@@ -12,8 +12,8 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
-    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.3">
-      <projectUrl>https://github.com/sorli2se/cts.git/</projectUrl>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.4">
+      <projectUrl>ssh://git@10.0.2.15/home/git/repo.git/</projectUrl>
       <displayName></displayName>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
     <hudson.plugins.copyartifact.CopyArtifactPermissionProperty plugin="copyartifact@1.46.4">
@@ -27,13 +27,13 @@
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
         <name>${JOB_NAME}</name>
-        <url>https://github.com/sorli2se/cts.git</url>
-        <credentialsId>f71ceb44-7f1e-414d-ada9-b7c49a230a7f</credentialsId>
+        <url>ssh://git@10.0.2.15/home/git/repo.git/</url>
+        <credentialsId>6077620c-1a9f-45ee-9072-3fb08a0a62e7</credentialsId>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>main</name>
+        <name>master</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -44,11 +44,7 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers>
-    <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.34.3">
-      <spec></spec>
-    </com.cloudbees.jenkins.GitHubPushTrigger>
-  </triggers>
+  <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
@@ -59,10 +55,9 @@ read -r -d &apos;&apos; VAR &lt;&lt;- EOM
 $JOB_NAME:
   repo_url : $GIT_URL
   revision : $COMMIT_ID
-  
 EOM
 
-echo &quot;$VAR&quot; &gt; metadata.txt
+echo &quot;$VAR&quot; &gt; metadataK8S.txt
 
 </command>
       <configuredLocalRules/>
@@ -70,7 +65,7 @@ echo &quot;$VAR&quot; &gt; metadata.txt
   </builders>
   <publishers>
     <hudson.tasks.ArtifactArchiver>
-      <artifacts>metadata.txt</artifacts>
+      <artifacts>metadataK8S.txt</artifacts>
       <allowEmptyArchive>false</allowEmptyArchive>
       <onlyIfSuccessful>true</onlyIfSuccessful>
       <fingerprint>true</fingerprint>
